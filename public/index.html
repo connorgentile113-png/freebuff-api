@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content="#171813" />
+    <title>Freebuff Local Console</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="grain" aria-hidden="true"></div>
+    <main class="shell">
+      <aside class="rail">
+        <header class="brand reveal">
+          <div class="brand-mark" aria-hidden="true">F/B</div>
+          <div>
+            <p class="eyebrow">Local agent relay</p>
+            <h1>Freebuff<br /><em>Console</em></h1>
+          </div>
+        </header>
+
+        <section class="status-card reveal delay-1" aria-label="Connection status">
+          <span class="status-light" id="statusLight"></span>
+          <div>
+            <span class="status-label">Bridge status</span>
+            <strong id="statusText">Checking signal…</strong>
+          </div>
+          <button class="icon-button" id="refreshStatus" type="button" aria-label="Refresh connection status">↻</button>
+        </section>
+
+        <section class="control-block reveal delay-2">
+          <div class="section-heading">
+            <span>01</span>
+            <h2>Select intelligence</h2>
+          </div>
+          <div class="model-list" id="modelList" aria-label="Available models">
+            <div class="model-skeleton"></div>
+            <div class="model-skeleton short"></div>
+          </div>
+        </section>
+
+        <details class="settings reveal delay-3">
+          <summary>Connection settings <span>+</span></summary>
+          <label>
+            Working directory
+            <input id="cwdInput" type="text" placeholder="/tmp/freebuff-api-workspace" autocomplete="off" />
+          </label>
+          <label>
+            API key <small>(only if configured)</small>
+            <input id="keyInput" type="password" placeholder="Bearer token" autocomplete="off" />
+          </label>
+        </details>
+
+        <footer class="rail-footer reveal delay-3">
+          <span>LOOPBACK / 127.0.0.1</span>
+          <span>OPENAI-STYLE</span>
+        </footer>
+      </aside>
+
+      <section class="workspace">
+        <header class="workspace-header reveal">
+          <div>
+            <p class="eyebrow dark">Active dialogue</p>
+            <h2 id="activeModel">Choose a model</h2>
+          </div>
+          <button class="clear-button" id="clearChat" type="button">Clear field notes</button>
+        </header>
+
+        <div class="transcript" id="transcript" aria-live="polite">
+          <div class="welcome-card reveal delay-1" id="welcomeCard">
+            <span class="issue">ISSUE № 01</span>
+            <h3>Your local models,<br />within speaking distance.</h3>
+            <p>Choose a signal on the left, write a prompt below, and the real Freebuff agent will answer here.</p>
+            <div class="starter-row">
+              <button class="starter" type="button" data-prompt="Explain what you can help me build in three concise bullets.">What can you build?</button>
+              <button class="starter" type="button" data-prompt="Write a tiny JavaScript function that debounces another function.">Test with code</button>
+            </div>
+          </div>
+        </div>
+
+        <form class="composer reveal delay-2" id="chatForm">
+          <div class="composer-topline">
+            <label for="promptInput">Message to agent</label>
+            <span id="requestTimer">READY</span>
+          </div>
+          <textarea id="promptInput" rows="3" placeholder="Ask Freebuff something…" required></textarea>
+          <div class="composer-actions">
+            <span><kbd>Ctrl</kbd> + <kbd>Enter</kbd> to send</span>
+            <button class="send-button" id="sendButton" type="submit">
+              <span>Transmit</span>
+              <span aria-hidden="true">↗</span>
+            </button>
+          </div>
+        </form>
+      </section>
+    </main>
+
+    <template id="messageTemplate">
+      <article class="message">
+        <div class="message-meta"><span class="message-role"></span><time></time></div>
+        <div class="message-body"></div>
+        <button class="copy-button" type="button">Copy</button>
+      </article>
+    </template>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
+

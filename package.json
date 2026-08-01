@@ -1,0 +1,15 @@
+{
+  "name": "freebuff-local-api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Local OpenAI-compatible API backed by an existing Freebuff login",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@xterm/headless": "^6.0.0",
+    "node-pty": "^1.1.0"
+  }
+}

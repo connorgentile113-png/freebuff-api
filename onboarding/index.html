@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Connect Freebuff</title>
+    <link rel="stylesheet" href="/setup.css">
+  </head>
+  <body>
+    <main class="shell">
+      <div class="signal" aria-hidden="true"><span></span><span></span><span></span></div>
+      <p class="eyebrow">LOCAL SERVICE / PORT 8787</p>
+      <section class="panel">
+        <div class="copy">
+          <p class="number">01</p>
+          <h1>Connect<br><em>Freebuff.</em></h1>
+          <p class="lede">One secure sign-in. Your credentials stay on this computer and are never sent through the local API.</p>
+        </div>
+        <div class="action">
+          <div class="status-row">
+            <span class="status-dot" id="status-dot"></span>
+            <span id="status">Ready to connect</span>
+          </div>
+          <button id="connect" type="button">
+            <span>Sign in with Freebuff</span>
+            <b aria-hidden="true">↗</b>
+          </button>
+          <p class="detail" id="detail">A browser tab will open for Freebuff authentication. This setup window closes when you return.</p>
+        </div>
+      </section>
+      <footer>
+        <span>API-only daemon</span>
+        <span>Freebuff sleeps after 15 min idle</span>
+        <span>Loopback traffic only</span>
+      </footer>
+    </main>
+    <script src="/setup.js"></script>
+  </body>
+</html>

@@ -10,18 +10,21 @@ if (host !== '127.0.0.1' && host !== '::1' && process.env.FREEBUFF_ALLOW_REMOTE 
   throw new Error('Refusing a non-loopback HOST unless FREEBUFF_ALLOW_REMOTE=1 is set');
 }
 
-const server = createApiServer({ runner: new FreebuffRunner() });
+const runner = new FreebuffRunner();
+const server = createApiServer({ runner });
 server.listen(port, host, () => {
   console.log(`Freebuff local API listening at http://${host}:${port}`);
 });
 
 let shuttingDown = false;
-function shutdown() {
+async function shutdown() {
   if (shuttingDown) return;
   shuttingDown = true;
-  server.close();
-  server.closeAllConnections?.();
-  setTimeout(() => process.exit(1), 3_000).unref();
+  const forcedExit = setTimeout(() => process.exit(1), 3_000);
+  forcedExit.unref();
+  await runner.close();
+  await new Promise((resolve) => server.close(resolve));
+  clearTimeout(forcedExit);
 }
 
 process.on('SIGINT', shutdown);

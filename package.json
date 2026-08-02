@@ -1,13 +1,32 @@
 {
   "name": "freebuff-local-api",
-  "version": "0.1.0",
-  "private": true,
+  "version": "0.2.0",
+  "private": false,
   "type": "module",
   "description": "Local OpenAI-compatible API backed by an existing Freebuff login",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "freebuff-api": "bin/freebuff-api.js",
+    "freebuff-api-setup": "bin/freebuff-api-setup.js",
+    "freebuff-api-service": "bin/freebuff-api-service.js"
+  },
   "scripts": {
     "start": "node server.js",
+    "setup": "node bin/freebuff-api-setup.js",
+    "service:install": "node bin/freebuff-api-service.js install",
+    "service:uninstall": "node bin/freebuff-api-service.js uninstall",
     "test": "node --test"
   },
+  "files": [
+    "bin",
+    "src",
+    "onboarding",
+    "installers",
+    "server.js",
+    "README.md"
+  ],
   "dependencies": {
     "@xterm/headless": "^6.0.0",
     "node-pty": "^1.1.0"

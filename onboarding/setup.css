@@ -1,0 +1,134 @@
+:root {
+  color-scheme: light;
+  --ink: #17211f;
+  --paper: #eee9dd;
+  --acid: #ff5b35;
+  --line: rgba(23, 33, 31, 0.28);
+  --muted: #5e6661;
+}
+
+* { box-sizing: border-box; }
+
+html, body { min-height: 100%; }
+
+body {
+  margin: 0;
+  color: var(--ink);
+  background:
+    linear-gradient(rgba(23, 33, 31, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(23, 33, 31, 0.045) 1px, transparent 1px),
+    var(--paper);
+  background-size: 28px 28px;
+  font-family: "IBM Plex Mono", "Cascadia Mono", "Courier New", monospace;
+}
+
+.shell {
+  width: min(1040px, calc(100% - 48px));
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 32px 0 28px;
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+}
+
+.signal { display: flex; gap: 5px; justify-self: end; }
+.signal span { width: 9px; height: 9px; border-radius: 50%; background: var(--ink); }
+.signal span:first-child { background: var(--acid); animation: pulse 1.8s ease-in-out infinite; }
+
+.eyebrow {
+  margin: 34px 0 20px;
+  font-size: 11px;
+  letter-spacing: .16em;
+}
+
+.panel {
+  border-top: 2px solid var(--ink);
+  border-bottom: 2px solid var(--ink);
+  display: grid;
+  grid-template-columns: 1.25fr .75fr;
+  min-height: 510px;
+}
+
+.copy { padding: 52px 40px 52px 0; border-right: 1px solid var(--line); }
+.number { margin: 0 0 44px; color: var(--acid); font-size: 13px; }
+
+h1 {
+  margin: 0;
+  font: 400 clamp(66px, 9vw, 116px)/.78 "Bodoni 72", Didot, "Iowan Old Style", Georgia, serif;
+  letter-spacing: -.07em;
+}
+h1 em { color: var(--acid); font-weight: 400; }
+
+.lede {
+  max-width: 500px;
+  margin: 50px 0 0;
+  color: var(--muted);
+  font: 17px/1.6 "Avenir Next", Avenir, sans-serif;
+}
+
+.action {
+  padding: 54px 0 50px 42px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.status-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: .11em;
+}
+.status-dot { width: 8px; height: 8px; background: var(--acid); border-radius: 50%; }
+.status-dot.busy { animation: pulse .9s ease-in-out infinite; }
+.status-dot.done { background: #21845b; }
+.status-dot.error { background: #a62a20; }
+
+button {
+  appearance: none;
+  width: 100%;
+  padding: 22px 20px;
+  border: 2px solid var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+  font: 600 13px/1 "Avenir Next", Avenir, sans-serif;
+  letter-spacing: .04em;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: transform 150ms ease, background 150ms ease, color 150ms ease;
+}
+button:hover { transform: translate(-4px, -4px); box-shadow: 4px 4px 0 var(--acid); }
+button:disabled { cursor: wait; opacity: .55; transform: none; box-shadow: none; }
+button b { color: var(--acid); font-size: 20px; }
+
+.detail { min-height: 58px; margin: 20px 0 0; color: var(--muted); font-size: 11px; line-height: 1.65; }
+
+footer {
+  padding-top: 20px;
+  display: flex;
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+@keyframes pulse { 50% { opacity: .25; transform: scale(.78); } }
+
+@media (max-width: 760px) {
+  .shell { width: min(100% - 30px, 620px); }
+  .panel { grid-template-columns: 1fr; }
+  .copy { padding: 38px 0; border-right: 0; border-bottom: 1px solid var(--line); }
+  .action { padding: 38px 0; }
+  h1 { font-size: clamp(64px, 20vw, 92px); }
+  footer { gap: 12px; flex-wrap: wrap; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}

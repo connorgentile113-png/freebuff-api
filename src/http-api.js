@@ -2,18 +2,11 @@ import fs from 'node:fs/promises';
 import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
 import { MODELS, resolveModel } from './models.js';
 import { buildPrompt } from './prompt.js';
 
 const MAX_BODY_BYTES = 1024 * 1024;
-const publicDirectory = fileURLToPath(new URL('../public/', import.meta.url));
-const staticFiles = new Map([
-  ['/', ['index.html', 'text/html; charset=utf-8']],
-  ['/app.js', ['app.js', 'text/javascript; charset=utf-8']],
-  ['/styles.css', ['styles.css', 'text/css; charset=utf-8']],
-]);
 
 function sendJson(response, status, value) {
   const body = `${JSON.stringify(value)}\n`;
@@ -42,19 +35,6 @@ function completionChunk({ id, created, model, delta, finishReason = null }) {
     model,
     choices: [{ index: 0, delta, finish_reason: finishReason }],
   };
-}
-
-async function sendStatic(response, pathname) {
-  const [filename, contentType] = staticFiles.get(pathname);
-  const body = await fs.readFile(path.join(publicDirectory, filename));
-  response.writeHead(200, {
-    'content-type': contentType,
-    'content-length': body.length,
-    'cache-control': filename === 'index.html' ? 'no-cache' : 'public, max-age=3600',
-    'content-security-policy': "default-src 'self'; style-src 'self'; script-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'",
-    'x-content-type-options': 'nosniff',
-  });
-  response.end(body);
 }
 
 async function readJson(request) {
@@ -87,19 +67,45 @@ function authorized(request, apiKey) {
   return request.headers.authorization === `Bearer ${apiKey}`;
 }
 
-export function createApiServer({ runner, apiKey = process.env.FREEBUFF_API_KEY, defaultCwd } = {}) {
+function parseCorsOrigins(value) {
+  if (!value) return new Set();
+  if (value instanceof Set) return value;
+  if (Array.isArray(value)) return new Set(value);
+  return new Set(value.split(',').map((origin) => origin.trim()).filter(Boolean));
+}
+
+function applyCors(request, response, allowedOrigins) {
+  const origin = request.headers.origin;
+  if (!origin || (!allowedOrigins.has('*') && !allowedOrigins.has(origin))) return false;
+  response.setHeader('access-control-allow-origin', allowedOrigins.has('*') ? '*' : origin);
+  response.setHeader('access-control-allow-methods', 'GET, POST, OPTIONS');
+  response.setHeader('access-control-allow-headers', 'Authorization, Content-Type');
+  response.setHeader('access-control-max-age', '600');
+  response.setHeader('vary', 'Origin');
+  return true;
+}
+
+export function createApiServer({
+  runner,
+  apiKey = process.env.FREEBUFF_API_KEY,
+  defaultCwd,
+  corsOrigins = process.env.FREEBUFF_CORS_ORIGINS,
+} = {}) {
   if (!runner) throw new TypeError('runner is required');
   const fallbackCwd = defaultCwd ?? process.env.FREEBUFF_CWD ?? path.join(os.tmpdir(), 'freebuff-api-workspace');
+  const allowedOrigins = parseCorsOrigins(corsOrigins);
   let queue = Promise.resolve();
 
   return http.createServer(async (request, response) => {
     const url = new URL(request.url, 'http://localhost');
-    if (request.method === 'GET' && staticFiles.has(url.pathname)) {
-      try {
-        await sendStatic(response, url.pathname);
-      } catch (error) {
-        apiError(response, 500, error.message, 'server_error');
-      }
+    const corsAllowed = applyCors(request, response, allowedOrigins);
+    if (request.headers.origin && !corsAllowed) {
+      apiError(response, 403, 'Browser origin is not allowed', 'cors_error');
+      return;
+    }
+    if (request.method === 'OPTIONS') {
+      response.writeHead(204);
+      response.end();
       return;
     }
 
@@ -108,8 +114,23 @@ export function createApiServer({ runner, apiKey = process.env.FREEBUFF_API_KEY,
       return;
     }
 
+    if (request.method === 'GET' && url.pathname === '/') {
+      const localHost = request.socket.localAddress?.includes(':') ? '[::1]' : '127.0.0.1';
+      sendJson(response, 200, {
+        name: 'freebuff-local-api',
+        api: 'openai-compatible',
+        base_url: `http://${localHost}:${request.socket.localPort}/v1`,
+        endpoints: ['/health', '/v1/models', '/v1/chat/completions'],
+      });
+      return;
+    }
+
     if (request.method === 'GET' && url.pathname === '/health') {
-      sendJson(response, 200, { status: 'ok', backend: 'freebuff-cli' });
+      sendJson(response, 200, {
+        status: 'ok',
+        backend: 'freebuff-cli',
+        freebuff: typeof runner.status === 'function' ? runner.status() : { state: 'unknown' },
+      });
       return;
     }
 

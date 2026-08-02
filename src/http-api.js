@@ -28,6 +28,22 @@ function apiError(response, status, message, type = 'invalid_request_error') {
   sendJson(response, status, { error: { message, type } });
 }
 
+function sendSse(response, value) {
+  if (!response.destroyed && !response.writableEnded) {
+    response.write(`data: ${typeof value === 'string' ? value : JSON.stringify(value)}\n\n`);
+  }
+}
+
+function completionChunk({ id, created, model, delta, finishReason = null }) {
+  return {
+    id,
+    object: 'chat.completion.chunk',
+    created,
+    model,
+    choices: [{ index: 0, delta, finish_reason: finishReason }],
+  };
+}
+
 async function sendStatic(response, pathname) {
   const [filename, contentType] = staticFiles.get(pathname);
   const body = await fs.readFile(path.join(publicDirectory, filename));
@@ -117,26 +133,98 @@ export function createApiServer({ runner, apiKey = process.env.FREEBUFF_API_KEY,
     });
     try {
       const body = await readJson(request);
-      if (body.stream === true) throw new TypeError('stream=true is not supported by this CLI bridge');
       const model = resolveModel(body.model);
       if (!model) throw new TypeError(`Unknown model. Use one of: ${MODELS.map((item) => item.id).join(', ')}`);
       const prompt = buildPrompt(body.messages);
       await fs.mkdir(fallbackCwd, { recursive: true });
       const cwd = await resolveCwd(body.cwd, fallbackCwd);
+      const stream = body.stream === true;
+      const id = `chatcmpl-${randomUUID()}`;
+      const created = Math.floor(Date.now() / 1000);
+      let streamedContent = '';
 
-      const task = () => runner.run({ modelId: model.id, prompt, cwd, signal: controller.signal });
+      if (stream) {
+        response.writeHead(200, {
+          'content-type': 'text/event-stream; charset=utf-8',
+          'cache-control': 'no-cache, no-transform',
+          connection: 'keep-alive',
+          'x-accel-buffering': 'no',
+        });
+        response.flushHeaders();
+        sendSse(response, completionChunk({
+          id,
+          created,
+          model: model.id,
+          delta: { role: 'assistant' },
+        }));
+      }
+
+      const task = () => runner.run({
+        modelId: model.id,
+        prompt,
+        cwd,
+        signal: controller.signal,
+        onDelta: stream ? (content) => {
+          streamedContent += content;
+          sendSse(response, completionChunk({
+            id,
+            created,
+            model: model.id,
+            delta: { content },
+          }));
+        } : undefined,
+      });
       const resultPromise = queue.then(task, task);
       queue = resultPromise.catch(() => {});
       const content = await resultPromise;
+
+      if (stream) {
+        if (content.startsWith(streamedContent)) {
+          const remainder = content.slice(streamedContent.length);
+          if (remainder) {
+            sendSse(response, completionChunk({
+              id,
+              created,
+              model: model.id,
+              delta: { content: remainder },
+            }));
+          }
+        } else if (!streamedContent && content) {
+          sendSse(response, completionChunk({
+            id,
+            created,
+            model: model.id,
+            delta: { content },
+          }));
+        }
+        sendSse(response, completionChunk({
+          id,
+          created,
+          model: model.id,
+          delta: {},
+          finishReason: 'stop',
+        }));
+        sendSse(response, '[DONE]');
+        response.end();
+        return;
+      }
+
       sendJson(response, 200, {
-        id: `chatcmpl-${randomUUID()}`,
+        id,
         object: 'chat.completion',
-        created: Math.floor(Date.now() / 1000),
+        created,
         model: model.id,
         choices: [{ index: 0, message: { role: 'assistant', content }, finish_reason: 'stop' }],
       });
     } catch (error) {
-      if (response.headersSent) return;
+      if (response.headersSent) {
+        if (!controller.signal.aborted) {
+          sendSse(response, { error: { message: error.message, type: 'freebuff_error' } });
+          sendSse(response, '[DONE]');
+          response.end();
+        }
+        return;
+      }
       if (error instanceof TypeError || error instanceof SyntaxError || error instanceof RangeError || error.code === 'ENOENT') {
         apiError(response, 400, error.message);
       } else if (controller.signal.aborted) {

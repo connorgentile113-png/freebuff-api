@@ -107,7 +107,7 @@ async function walkForChatFiles(directory, output = []) {
   return output;
 }
 
-async function readCompletion(configDir) {
+async function readAgentProgress(configDir) {
   const files = await walkForChatFiles(path.join(configDir, 'projects'));
   for (const file of files) {
     let messages;
@@ -131,13 +131,14 @@ async function readCompletion(configDir) {
     } catch {
       // A run-state file is optional; isComplete remains the primary signal.
     }
-    if (latestAi.isComplete !== true && !runFinished) continue;
-
     const text = finalText(latestAi);
-    if (text) return text;
-    throw new Error('Freebuff completed without returning a final text response');
+    const complete = latestAi.isComplete === true || runFinished;
+    if (complete && !text) {
+      throw new Error('Freebuff completed without returning a final text response');
+    }
+    return { text, complete };
   }
-  return null;
+  return { text: '', complete: false };
 }
 
 async function waitForScreen(terminal, predicate, timeoutMs, label) {
@@ -195,7 +196,7 @@ export class FreebuffRunner {
     this.responseTimeoutMs = options.responseTimeoutMs ?? Number(process.env.FREEBUFF_TIMEOUT_MS ?? 300_000);
   }
 
-  async run({ modelId, prompt, cwd, signal }) {
+  async run({ modelId, prompt, cwd, signal, onDelta }) {
     const requestedModel = resolveModel(modelId);
     if (!requestedModel) throw new Error(`Unsupported Freebuff model: ${modelId}`);
     const activePid = await activeSourceInstance(this.sourceConfigDir);
@@ -281,10 +282,20 @@ export class FreebuffRunner {
 
       const deadline = Date.now() + this.responseTimeoutMs;
       const submittedAt = Date.now();
+      let emittedText = '';
+      const emitProgress = (text) => {
+        if (!text || !onDelta) return;
+        if (text.startsWith(emittedText)) {
+          const delta = text.slice(emittedText.length);
+          if (delta) onDelta(delta);
+          emittedText = text;
+        }
+      };
       while (Date.now() < deadline) {
         if (aborted) throw new Error('Request aborted');
-        const completion = await readCompletion(configDir);
-        if (completion) return completion;
+        const progress = await readAgentProgress(configDir);
+        emitProgress(progress.text);
+        if (progress.complete) return progress.text;
         const screen = terminalText(terminal);
         const promptPosition = screen.indexOf(prompt);
         const inputPosition = screen.lastIndexOf('Enter a coding task');
@@ -295,7 +306,10 @@ export class FreebuffRunner {
           !screen.includes('■ Esc')
         ) {
           const response = terminalResponse(screen, prompt);
-          if (response) return response;
+          if (response) {
+            emitProgress(response);
+            return response;
+          }
         }
         await delay(250);
       }

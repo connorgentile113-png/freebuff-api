@@ -31,6 +31,18 @@ curl http://127.0.0.1:8787/v1/chat/completions \
   }'
 ```
 
+Stream an answer using OpenAI-compatible server-sent events:
+
+```bash
+curl -N http://127.0.0.1:8787/v1/chat/completions \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "model": "deepseek",
+    "stream": true,
+    "messages": [{"role": "user", "content": "Explain closures briefly."}]
+  }'
+```
+
 Short aliases also work: `minimax`, `deepseek` (Flash), `deepseek-pro`, `deepseek-flash`, and `mimo`.
 
 ## Options
@@ -47,6 +59,6 @@ Requests are serialized because the underlying program is an interactive agent. 
 ## Important limitations
 
 - This is a CLI bridge, not a direct provider API, so responses can take longer than ordinary inference APIs.
-- Streaming (`"stream": true`) is not supported.
+- Streaming emits final-answer text only; Freebuff reasoning and tool traces are intentionally omitted.
 - Freebuff is a coding agent. It can use tools and modify the selected `cwd` when prompted. The default working directory is `/tmp/freebuff-api-workspace` to reduce accidental changes.
 - Freebuff account limits and model availability still apply.

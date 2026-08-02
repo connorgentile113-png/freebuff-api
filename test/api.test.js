@@ -58,6 +58,8 @@ test('OpenAI-compatible endpoint returns runner output', async (t) => {
     runner: {
       async run(options) {
         calls.push(options);
+        options.onDelta?.('hello ');
+        options.onDelta?.('from Freebuff');
         return 'hello from Freebuff';
       },
     },
@@ -102,4 +104,32 @@ test('OpenAI-compatible endpoint returns runner output', async (t) => {
   assert.equal(response.status, 200);
   assert.equal(response.body.choices[0].message.content, 'hello from Freebuff');
   assert.equal(calls[0].modelId, 'minimax/minimax-m3');
+
+  const streamed = await new Promise((resolve, reject) => {
+    const request = http.request(
+      { hostname: '127.0.0.1', port, path: '/v1/chat/completions', method: 'POST', headers: { 'content-type': 'application/json' } },
+      (incoming) => {
+        const chunks = [];
+        incoming.on('data', (chunk) => chunks.push(chunk));
+        incoming.on('end', () => resolve({
+          status: incoming.statusCode,
+          contentType: incoming.headers['content-type'],
+          body: Buffer.concat(chunks).toString('utf8'),
+        }));
+      },
+    );
+    request.on('error', reject);
+    request.end(JSON.stringify({
+      model: 'deepseek',
+      stream: true,
+      messages: [{ role: 'user', content: 'Say hello' }],
+    }));
+  });
+
+  assert.equal(streamed.status, 200);
+  assert.match(streamed.contentType, /^text\/event-stream/);
+  assert.match(streamed.body, /"content":"hello "/);
+  assert.match(streamed.body, /"content":"from Freebuff"/);
+  assert.match(streamed.body, /"finish_reason":"stop"/);
+  assert.match(streamed.body, /data: \[DONE\]/);
 });

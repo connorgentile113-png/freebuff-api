@@ -96,14 +96,47 @@ function addMessage(role, content, isError = false) {
   node.classList.add(role, ...(isError ? ['error'] : []));
   node.querySelector('.message-role').textContent = role === 'user' ? 'You / outgoing' : isError ? 'Relay error' : 'Freebuff / incoming';
   node.querySelector('time').textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  node.querySelector('.message-body').textContent = content;
+  const body = node.querySelector('.message-body');
+  body.textContent = content;
   node.querySelector('.copy-button').addEventListener('click', async (event) => {
-    await navigator.clipboard.writeText(content);
+    await navigator.clipboard.writeText(body.textContent);
     event.currentTarget.textContent = 'Copied';
     setTimeout(() => { event.currentTarget.textContent = 'Copy'; }, 1200);
   });
   elements.transcript.append(node);
   node.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  return node;
+}
+
+async function readSse(response, onContent) {
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let done = false;
+
+  while (!done) {
+    const result = await reader.read();
+    buffer += decoder.decode(result.value || new Uint8Array(), { stream: !result.done });
+    const events = buffer.split('\n\n');
+    buffer = events.pop() || '';
+
+    for (const event of events) {
+      for (const line of event.split('\n')) {
+        if (!line.startsWith('data: ')) continue;
+        const data = line.slice(6);
+        if (data === '[DONE]') {
+          done = true;
+          break;
+        }
+        const payload = JSON.parse(data);
+        if (payload.error) throw new Error(payload.error.message || 'Streaming request failed');
+        const content = payload.choices?.[0]?.delta?.content;
+        if (content) onContent(content);
+      }
+      if (done) break;
+    }
+    if (result.done) done = true;
+  }
 }
 
 function addThinking() {
@@ -145,21 +178,40 @@ async function sendPrompt(prompt) {
   elements.prompt.value = '';
   setBusy(true);
   addThinking();
+  let responseNode;
 
   try {
     const cwd = elements.cwd.value.trim();
     const response = await fetch('/v1/chat/completions', {
       method: 'POST',
       headers: headers(),
-      body: JSON.stringify({ model: state.model, messages: state.messages, ...(cwd ? { cwd } : {}) }),
+      body: JSON.stringify({ model: state.model, messages: state.messages, stream: true, ...(cwd ? { cwd } : {}) }),
     });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error?.message || `Request failed (${response.status})`);
-    const answer = data.choices?.[0]?.message?.content || '(No text returned)';
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.error?.message || `Request failed (${response.status})`);
+    }
+
+    let answer = '';
+    await readSse(response, (delta) => {
+      answer += delta;
+      if (!responseNode) {
+        document.querySelector('#thinking')?.remove();
+        responseNode = addMessage('assistant', '');
+        responseNode.classList.add('streaming');
+      }
+      responseNode.querySelector('.message-body').textContent = answer;
+      responseNode.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    });
+    answer ||= '(No text returned)';
+    if (!responseNode) {
+      document.querySelector('#thinking')?.remove();
+      responseNode = addMessage('assistant', answer);
+    }
+    responseNode.classList.remove('streaming');
     state.messages.push({ role: 'assistant', content: answer });
-    document.querySelector('#thinking')?.remove();
-    addMessage('assistant', answer);
   } catch (error) {
+    responseNode?.classList.remove('streaming');
     document.querySelector('#thinking')?.remove();
     addMessage('assistant', error.message, true);
   } finally {
@@ -191,4 +243,3 @@ document.querySelectorAll('.starter').forEach((button) => button.addEventListene
 }));
 
 await Promise.all([checkHealth(), loadModels()]);
-

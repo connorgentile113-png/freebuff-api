@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { once } from 'node:events';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
@@ -50,6 +50,14 @@ test('terminal extraction omits the thinking block and footer', () => {
     '│  Enter a coding task or / for commands │',
   ].join('\n');
   assert.equal(terminalResponse(screen, 'Prompt text'), 'Final answer\nwith two lines');
+});
+
+test('runner waits for completed chat-file output instead of terminal progress', async () => {
+  const runnerSource = await readFile(
+    new URL('../src/freebuff-runner.js', import.meta.url),
+    'utf8',
+  );
+  assert.doesNotMatch(runnerSource, /terminalResponse\(screen, prompt\)/);
 });
 
 test('setup extracts the Freebuff login URL without exposing other output', () => {

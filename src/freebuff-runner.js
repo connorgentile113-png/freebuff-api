@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawn } from 'node-pty';
 import xtermHeadless from '@xterm/headless';
-import { finalText, terminalResponse } from './response.js';
+import { finalText } from './response.js';
 import { resolveModel } from './models.js';
 
 const { Terminal } = xtermHeadless;
@@ -371,21 +371,6 @@ export class FreebuffSession {
         emitProgress(progress.text);
         if (progress.complete) return progress.text;
 
-        const screen = terminalText(this.terminal);
-        const promptPosition = screen.indexOf(prompt);
-        const inputPosition = screen.lastIndexOf('Enter a coding task');
-        if (
-          Date.now() - submittedAt > 1_000 &&
-          promptPosition >= 0 &&
-          inputPosition > promptPosition + prompt.length &&
-          !screen.includes('■ Esc')
-        ) {
-          const response = terminalResponse(screen, prompt);
-          if (response) {
-            emitProgress(response);
-            return response;
-          }
-        }
         await delay(250);
       }
       const timeoutError = new Error(`Freebuff response timed out after ${this.responseTimeoutMs}ms`);

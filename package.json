@@ -1,6 +1,6 @@
 {
   "name": "freebuff-local-api",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": false,
   "type": "module",
   "description": "Local OpenAI-compatible API backed by an existing Freebuff login",

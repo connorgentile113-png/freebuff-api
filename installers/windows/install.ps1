@@ -2,16 +2,25 @@ $ErrorActionPreference = "Stop"
 $ProjectDir = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 $InstallDir = Join-Path $env:LOCALAPPDATA "FreebuffAPI\app"
 
-if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
-  throw "Node.js 20 or newer is required."
-}
-if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
-  throw "npm is required."
+function Test-NodeReady {
+  if (-not (Get-Command node -ErrorAction SilentlyContinue)) { return $false }
+  if (-not (Get-Command npm -ErrorAction SilentlyContinue)) { return $false }
+  $Major = [int]((& node -p "process.versions.node.split('.')[0]").Trim())
+  return $Major -ge 20
 }
 
-$PrivateFreebuff = Join-Path $HOME ".config\manicode\freebuff.exe"
-if (-not (Get-Command freebuff -ErrorAction SilentlyContinue) -and -not (Test-Path $PrivateFreebuff)) {
-  npm install --global freebuff
+if (-not (Test-NodeReady)) {
+  Write-Host "Node.js 20+ and npm were not found. Installing the current Node.js LTS..."
+  if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+    throw "Install Node.js LTS from https://nodejs.org, then run this installer again."
+  }
+  winget install --id OpenJS.NodeJS.LTS --exact --accept-package-agreements --accept-source-agreements
+  if ($LASTEXITCODE -ne 0) { throw "Could not install Node.js LTS with winget." }
+  $env:Path = "$env:ProgramFiles\nodejs;$env:LOCALAPPDATA\Microsoft\WinGet\Links;$env:Path"
+}
+
+if (-not (Test-NodeReady)) {
+  throw "Node.js installed, but node/npm are not available yet. Open a new terminal and run this installer again."
 }
 
 node (Join-Path $ProjectDir "bin\freebuff-api-setup.js")

@@ -10,7 +10,7 @@ The small HTTP daemon starts when you sign in to your computer. The actual Freeb
 
 ## Install
 
-Node.js 20 or newer is required. Download or clone this repository, then run the installer for your operating system.
+Download or clone this repository, then run the installer for your operating system. If Node.js 20+ or npm is missing, the installer installs the current Node.js LTS (which includes npm) before continuing.
 
 ### Linux
 
@@ -36,7 +36,7 @@ Double-click `installers\windows\install.cmd`, or right-click `install.ps1` and 
 
 This installs a per-user Scheduled Task with a hidden console window.
 
-The installer installs project dependencies, installs the official `freebuff` npm package if it is missing, and immediately opens a temporary local setup page. Press **Sign in with Freebuff** there. The page runs the genuine `freebuff login` flow, opens the Freebuff URL in a browser tab, detects successful login without returning the token to the page, closes, and starts the background API service.
+The installer installs project dependencies, installs the official `freebuff` npm package if it is missing, and immediately opens a temporary local setup page. Press **Sign in with Freebuff** there. If the CLI is still missing, the page installs it automatically; if that fails, it shows a copyable `npm install --global freebuff` command. The page then runs the genuine `freebuff login` flow, opens the Freebuff URL in a browser tab, detects successful login without returning the token to the page, closes, and starts the background API service.
 
 The sign-in page is only used during setup. The service at port 8787 serves JSON/SSE endpoints and no chat UI.
 The package is copied into a stable per-user application directory, so the downloaded folder can be deleted after installation.

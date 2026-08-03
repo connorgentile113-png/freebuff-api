@@ -108,6 +108,29 @@ button b { color: var(--acid); font-size: 20px; }
 
 .detail { min-height: 58px; margin: 20px 0 0; color: var(--muted); font-size: 11px; line-height: 1.65; }
 
+.recovery {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.5;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+}
+.recovery[hidden] { display: none; }
+.command-row { margin-top: 8px; display: flex; border: 1px solid var(--ink); background: rgba(255,255,255,.2); }
+.command-row code { flex: 1; min-width: 0; padding: 11px; overflow-wrap: anywhere; color: var(--ink); font-size: 10px; text-transform: none; letter-spacing: 0; }
+.copy-command {
+  width: auto;
+  flex: 0 0 auto;
+  padding: 10px;
+  border: 0;
+  border-left: 1px solid var(--ink);
+  font-size: 10px;
+}
+.copy-command:hover { transform: none; box-shadow: none; background: var(--acid); color: var(--ink); }
+
 footer {
   padding-top: 20px;
   display: flex;

@@ -5,12 +5,8 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd -- "$SCRIPT_DIR/../.." && pwd)"
 INSTALL_DIR="$HOME/Library/Application Support/FreebuffAPI/app"
 
-command -v node >/dev/null || { echo "Node.js 20 or newer is required." >&2; exit 1; }
-command -v npm >/dev/null || { echo "npm is required." >&2; exit 1; }
-
-if ! command -v freebuff >/dev/null 2>&1 && [[ ! -x "$HOME/.config/manicode/freebuff" ]]; then
-  npm install --global freebuff
-fi
+# shellcheck source=../unix/ensure-node.sh
+source "$PROJECT_DIR/installers/unix/ensure-node.sh"
 
 node "$PROJECT_DIR/bin/freebuff-api-setup.js"
 mkdir -p "$INSTALL_DIR"

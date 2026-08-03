@@ -124,8 +124,12 @@ async function serveStatic(response, pathname) {
 }
 
 export async function runSetup({ open = openBrowser } = {}) {
+  if (await isAuthenticated()) {
+    console.log('Freebuff is already signed in; continuing installation.');
+    return;
+  }
   const state = {
-    phase: await isAuthenticated() ? 'connected' : 'waiting',
+    phase: 'waiting',
     loginUrl: null,
     error: null,
     child: null,

@@ -62,6 +62,11 @@ function quoteShell(value) {
 
 const portableLinuxMarker = '# freebuff-local-api';
 
+export function isEmptyCrontabError(message) {
+  return /no crontab/i.test(message)
+    || /(?:can't|cannot) open .+: no such file or directory/i.test(message);
+}
+
 async function stopPortableProcess(pidPath) {
   try {
     const pid = Number.parseInt(await fs.readFile(pidPath, 'utf8'), 10);
@@ -79,7 +84,7 @@ async function readCrontab() {
   try {
     return await capture('crontab', ['-l']);
   } catch (error) {
-    if (/no crontab/i.test(error.message)) return '';
+    if (isEmptyCrontabError(error.message)) return '';
     throw error;
   }
 }

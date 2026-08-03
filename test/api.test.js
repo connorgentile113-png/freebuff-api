@@ -10,6 +10,7 @@ import { createApiServer } from '../src/http-api.js';
 import { resolveModel } from '../src/models.js';
 import { buildPrompt } from '../src/prompt.js';
 import { finalText, terminalResponse } from '../src/response.js';
+import { isEmptyCrontabError } from '../src/service-manager.js';
 import { findLoginUrl } from '../src/setup.js';
 
 test('model aliases resolve to canonical IDs', () => {
@@ -66,6 +67,12 @@ test('setup extracts the Freebuff login URL without exposing other output', () =
     'https://auth.example.test/login?code=abc',
   );
   assert.equal(findLoginUrl('No URL yet'), null);
+});
+
+test('Alpine empty crontab errors are treated as an empty crontab', () => {
+  assert.equal(isEmptyCrontabError("crontab: can't open 'alpine': No such file or directory"), true);
+  assert.equal(isEmptyCrontabError('no crontab for alpine'), true);
+  assert.equal(isEmptyCrontabError('crontab: permission denied'), false);
 });
 
 test('runner reuses a compatible session and stops it after the idle window', async () => {

@@ -294,3 +294,12 @@ test('browser CORS is opt-in while ordinary local clients remain unrestricted', 
     'http://tool-ai.local',
   );
 });
+
+test('installed service configuration trusts Tool AI browser origins', async () => {
+  const source = await readFile(
+    new URL('../src/service-manager.js', import.meta.url),
+    'utf8',
+  );
+  assert.match(source, /https:\/\/toolai\.us/);
+  assert.match(source, /FREEBUFF_CORS_ORIGINS/);
+});

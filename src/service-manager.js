@@ -6,6 +6,13 @@ import { fileURLToPath } from 'node:url';
 
 const projectRoot = fileURLToPath(new URL('../', import.meta.url));
 const serverPath = path.join(projectRoot, 'server.js');
+const toolAiCorsOrigins = [
+  'https://toolai.us',
+  'https://www.toolai.us',
+  'https://alpha-toolai.onrender.com',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+].join(',');
 
 function run(command, args, { ignoreFailure = false } = {}) {
   return new Promise((resolve, reject) => {
@@ -111,6 +118,7 @@ async function installPortableLinux() {
   const launcher = `#!/bin/sh
 export HOST=127.0.0.1
 export PORT=8787
+export FREEBUFF_CORS_ORIGINS=${quoteShell(toolAiCorsOrigins)}
 exec ${quoteShell(process.execPath)} ${quoteShell(serverPath)} >>${quoteShell(stdoutPath)} 2>>${quoteShell(stderrPath)}
 `;
 
@@ -131,7 +139,12 @@ exec ${quoteShell(process.execPath)} ${quoteShell(serverPath)} >>${quoteShell(st
   const stderr = await fs.open(stderrPath, 'a');
   const child = spawn(process.execPath, [serverPath], {
     detached: true,
-    env: { ...process.env, HOST: '127.0.0.1', PORT: '8787' },
+    env: {
+      ...process.env,
+      HOST: '127.0.0.1',
+      PORT: '8787',
+      FREEBUFF_CORS_ORIGINS: toolAiCorsOrigins,
+    },
     stdio: ['ignore', stdout.fd, stderr.fd],
   });
   child.unref();
@@ -183,6 +196,7 @@ Restart=on-failure
 RestartSec=3
 Environment=HOST=127.0.0.1
 Environment=PORT=8787
+Environment=FREEBUFF_CORS_ORIGINS=${toolAiCorsOrigins}
 
 [Install]
 WantedBy=default.target
@@ -220,7 +234,11 @@ async function installMacos() {
   <key>RunAtLoad</key><true/>
   <key>KeepAlive</key><true/>
   <key>EnvironmentVariables</key>
-  <dict><key>HOST</key><string>127.0.0.1</string><key>PORT</key><string>8787</string></dict>
+  <dict>
+    <key>HOST</key><string>127.0.0.1</string>
+    <key>PORT</key><string>8787</string>
+    <key>FREEBUFF_CORS_ORIGINS</key><string>${xml(toolAiCorsOrigins)}</string>
+  </dict>
   <key>StandardOutPath</key><string>${xml(path.join(stateDirectory, 'stdout.log'))}</string>
   <key>StandardErrorPath</key><string>${xml(path.join(stateDirectory, 'stderr.log'))}</string>
 </dict>
@@ -247,7 +265,7 @@ async function installWindows() {
   const stateDirectory = path.join(process.env.LOCALAPPDATA ?? os.homedir(), 'FreebuffAPI');
   const launcherPath = path.join(stateDirectory, 'freebuff-api-launch.vbs');
   const command = `"${quoteVbs(process.execPath)}" "${quoteVbs(serverPath)}"`;
-  const launcher = `CreateObject("Wscript.Shell").Run "${quoteVbs(command)}", 0, False\r\n`;
+  const launcher = `Set shell = CreateObject("Wscript.Shell")\r\nshell.Environment("PROCESS")("FREEBUFF_CORS_ORIGINS") = "${quoteVbs(toolAiCorsOrigins)}"\r\nshell.Run "${quoteVbs(command)}", 0, False\r\n`;
   await fs.mkdir(stateDirectory, { recursive: true });
   await fs.writeFile(launcherPath, launcher, 'utf8');
   await run('schtasks.exe', [

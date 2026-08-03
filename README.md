@@ -106,7 +106,7 @@ Requests are serialized because Freebuff is an interactive agent. A cached CLI s
 - `FREEBUFF_STARTUP_ATTEMPTS=3` and `FREEBUFF_STARTUP_RETRY_MS=10000` control automatic retries when Freebuff's session service reports that it is temporarily busy.
 - `FREEBUFF_CWD=/absolute/path` sets the default agent working directory. A request can supply a top-level `cwd` override.
 - `FREEBUFF_API_KEY=secret` requires `Authorization: Bearer secret`.
-- `FREEBUFF_CORS_ORIGINS=http://localhost:3000` explicitly allows browser origins. Comma-separate multiple origins. No browser CORS access is allowed by default; Node clients are unaffected.
+- `FREEBUFF_CORS_ORIGINS=http://localhost:3000` explicitly allows browser origins. Comma-separate multiple origins. Installed services allow Tool AI's production, alpha, and local origins so its browser can reach the loopback API; manual starts allow no browser origins by default. Node clients are unaffected.
 - `FREEBUFF_BIN` and `FREEBUFF_CONFIG_DIR` override Freebuff discovery.
 - `HOST=127.0.0.1` and `PORT=8787` set the listener. A non-loopback host is refused unless `FREEBUFF_ALLOW_REMOTE=1` is also set.
 - `FREEBUFF_TAKEOVER_ACTIVE=1` permits the API to take over from an existing interactive Freebuff instance. By default it refuses to disrupt one.

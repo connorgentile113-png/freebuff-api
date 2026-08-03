@@ -18,7 +18,8 @@ Download or clone this repository, then run the installer for your operating sys
 ./installers/linux/install.sh
 ```
 
-This installs a user-level systemd service. It does not require root.
+This installs a user-level systemd service when systemd is available. On Alpine and other non-systemd distributions, it starts a detached user service and adds it to the user's `@reboot` crontab.
+On Alpine Linux, the installer also installs `python3` and `build-base` through `doas`, `sudo`, or the root account when `node-pty` needs to compile from source.
 
 ### macOS
 

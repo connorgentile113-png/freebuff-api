@@ -7,6 +7,8 @@ INSTALL_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/freebuff-api"
 
 # shellcheck source=../unix/ensure-node.sh
 source "$PROJECT_DIR/installers/unix/ensure-node.sh"
+# shellcheck source=ensure-build-tools.sh
+source "$PROJECT_DIR/installers/linux/ensure-build-tools.sh"
 
 node "$PROJECT_DIR/bin/freebuff-api-setup.js"
 mkdir -p "$INSTALL_DIR"
